@@ -1,16 +1,13 @@
 #include <Thing.h>
-#include <SFE_MicroOLED.h>
 #include <BlinkPattern.h>
-#include "Wire.h"
-#include "SPI.h"
+#include "devices/SSD1306I2C64x48.h"
 
 using namespace ootb;
-
-#define PIR_PIN D3
+using namespace g3rb3n;
 
 Thing thing;
-MicroOLED oled(255, 0);
 BlinkPattern led(BUILTIN_LED);
+SSD1306I2C64x48 oled(0x3C);
 
 BlinkPattern::Pattern<2> initialize{{1,1},50};
 BlinkPattern::Pattern<2> on{{39,1},25};
@@ -22,22 +19,22 @@ void setup()
     Serial.println("ClientID:" + thing.clientId());
 
     oled.begin();
-    oled.setFontType(0);
-  
+
     led.setPattern(initialize);
 
-    display(thing.clientId());
-    pinMode(BUILTIN_LED, OUTPUT);
+    showText(thing.clientId());
 
-    thing.onStateChange([](const String& msg){
-        display(msg);
+    thing.onStateChange([](const String& msg)
+    {
+        showText(msg);
         Serial.println(msg);
     });
 
     thing.begin();
-
-    thing.addActuator("oled/text/" + thing.clientId(), [](Value& value){
-        display((String)value);
+    String topic = "things/" + thing.clientId() + "/oled/text";
+    thing.addActuator(topic, [](Value& value)
+    {
+        showText((String)value);
         Serial.println((String)value);
     });
 
@@ -49,9 +46,10 @@ void loop()
     thing.handle();
 }
 
-void display(const String& value){
-  oled.clear(PAGE);
-  oled.setCursor(0,0);
-  oled.print(value);
-  oled.display(); 
+void showText(const String& value)
+{
+    oled.clear();
+    oled.setCursor(0,0);
+    oled.print(value);
+    oled.display();
 }
